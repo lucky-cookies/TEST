@@ -197,7 +197,8 @@
         var temp = sys_root_path.split('/')
         var sys_root_name = temp[temp.length - 1]
         var sys_folders = [sys_root_path, sys_root_path+'/'+'Noise', sys_root_path+'/'+'Masks']
-        var if_OMT_exists = true
+        var if_OMT_exists = false
+        var if_OMT_alert = true
         // set script create folder settings
         // not working
         //app.settings.saveSetting("Main Pref Section v2", "Pref_SCRIPTING_FILE_NETWORK_SECURITY", "1")
@@ -255,19 +256,30 @@
             render_item = bru_project.renderQueue.items.add(render_comp)
             
             // set render settings
-            if (render_item.outputModule(1).templates.indexOf(output_template) != -1)
+            
+            for (yy=1; yy<=render_item.outputModule(1).templates.length; yy++)
+            {
+                if (output_template == render_item.outputModule(1).templates[yy])
+                {
+                  if_OMT_exists = true
+                  break  
+                }
+            }
+            
+            if (if_OMT_exists)
             {
                 render_item.outputModule(1).applyTemplate(output_template) 
             }
             else 
             {
-                if (if_OMT_exists)
+                if (if_OMT_alert)
                 {
                     alert(output_template+' is not present in output module templates list! Default settings will be assigned.')
-                    if_OMT_exists = false
+                    if_OMT_alert = false
                 }
             }
-            render_item.outputModule(1).file = new File(sys_render_folder.fsname+'/'+render_comp.name)
+            render_item.outputModule(1).file = new File(sys_render_folder.fsName+'/'+render_comp.name+'.[####]')
+
         }
         // save the project
 
