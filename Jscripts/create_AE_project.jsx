@@ -1,6 +1,11 @@
 {   
     // read config 
-    var conf_path = './conf.jsx'
+    // ./conf is not works when run this script from command line
+    // $.fileName not works too
+    // need explicit filepath definition
+    var conf_path = 'F:/!!_WORK_!!/!!__VV__!!/scripts/BruDigital/AE_2020_JS/scripts/Jscripts/conf.jsx'
+    var output_log_name = '.output_log'
+    var out_errors = 'JAVASCRIPT:\n'
     var nested_file = new File(conf_path)
     if (nested_file.exists)
     {
@@ -10,10 +15,11 @@
     }
     else
     {
-        alert('Config is absent!')
-        throw "Incorrect data"
+        my_output('Config is absent!')
+        if (typeof NON_GUI_MODE != 'undefined' && NON_GUI_MODE == true){save_log_file(SEQUENCE_FOLDER_PATH)}
+        throw ""
     }
-    //
+    //assign params that are read from config file
     var output_template = OUTPUT_TEMPLATE
     var sys_render_folder_name = SYS_RENDER_FOLDER_NAME
     var start_search_sys_folder = START_SEARCH_SYS_FOLDER
@@ -24,21 +30,26 @@
     var project_fps = PROJECT_FPS
     var project_bpc = PROJECT_BPC
     
-    var gui_mode = true
-    var out_errors = ''
     var dict_seq = []
     
     var bru_project
     var io = new ImportOptions()
     
-    function stopp(){}
-
     function import_folder_seqs(ae_folder, seq_array)
     // import sequences to AE folder
     {
         for (i=0; i<seq_array.length; i++)
         {
-            io.file = seq_array[i]
+            try
+            {
+                io.file = seq_array[i]
+            }
+            catch (e)
+            {
+                // if current file is not valid type for import
+                my_output(e.message)
+                continue
+            }
             if (!io.canImportAs(ImportAsType.FOOTAGE)){continue}
             io.sequence = true
             imported_seq = bru_project.importFile(io)
@@ -52,7 +63,7 @@
         var fld = Folder(sys_folder_path)
         if (! fld.exists )
         {
-            alert("Folder " + sys_folder_path + " does not exist!")
+            my_output("Folder " + sys_folder_path + " does not exist!")
             return
         }
         var root_childs = fld.getFiles()
@@ -149,7 +160,7 @@
         
         if (root_folder == undefined)
         {
-            alert(err_out)
+            my_output(err_out)
             return undefined
         }
         
@@ -162,7 +173,7 @@
             }
         }
         //if "CC" composition is not found
-        alert(err_out)
+        my_output(err_out)
         return undefined
     }
 
@@ -171,7 +182,7 @@
         var main_folder = Folder(sys_root_path)
         if (main_folder instanceof File || !main_folder.exists)
         {
-            alert ("Folder with render sequences is undefined!")
+            my_output ("Folder with render sequences is undefined!")
             return
         }
         
@@ -190,7 +201,7 @@
         }
         else
         {
-            alert('File with composition not exists!\nStandart Common Composition will be created!')
+            my_output('File with composition not exists!\nStandart Common Composition will be created!')
             bru_project = app.newProject()
         }
         
@@ -256,7 +267,7 @@
             render_item = bru_project.renderQueue.items.add(render_comp)
             
             // set render settings
-            
+            // stupid check if output_template in array, the standart methods not work
             for (yy=1; yy<=render_item.outputModule(1).templates.length; yy++)
             {
                 if (output_template == render_item.outputModule(1).templates[yy])
@@ -274,7 +285,7 @@
             {
                 if (if_OMT_alert)
                 {
-                    alert(output_template+' is not present in output module templates list! Default settings will be assigned.')
+                    amy_output(output_template+' is not present in output module templates list! Default settings will be assigned.')
                     if_OMT_alert = false
                 }
             }
@@ -286,45 +297,76 @@
         bru_project.save(new File(sys_root_path + '/' + sys_root_name))
     }
 
+    function save_log_file(file_path)
+    {
+        file_obj = new File(file_path+'/'+output_log_name)
+        // need append because Python part save the logs at the same file
+        file_obj.open("a")
+        file_obj.write(out_errors)
+        file_obj.close()
+    }
+
+    function my_output(mess)
+    {
+        if (typeof NON_GUI_MODE != 'undefined' && NON_GUI_MODE == true)
+        {
+            out_errors = out_errors + mess + "\n\n"
+        }
+        else
+        {
+            alert(mess)
+        }
+    }
+
     // main and GUI
-    
-    var new_project_Win = new Window("palette", "Create new AE template project")
-    new_project_Win.orientation = "column"
-    new_project_Win.border = [3,3,3,3]
-    var groupOne = new_project_Win.add("group")
-        groupOne.add("statictext", [0,0,70,10], "Renders:")
-        var path_render = groupOne.add("edittext", [0,0,600,18])
-    
-    var groupTwo = new_project_Win.add("group")
-        groupTwo.add("statictext", undefined, "Composition:")
-        var path_comp = groupTwo.add("edittext", [0,0,600,18])
+    // trick if this script running from command line
+    // NON_GUI_MODE must be defined by external script or by command line
+    if (typeof NON_GUI_MODE != 'undefined' && NON_GUI_MODE == true)
+    {
+        // SEQUENCE_FOLDER_PATH and COMPOSITION_TEMPLATE_FILE must be defined by external script or by command line
+        bru_main(SEQUENCE_FOLDER_PATH, COMPOSITION_TEMPLATE_FILE)
+        save_log_file(SEQUENCE_FOLDER_PATH)
+    }
+    else
+    {
+        var new_project_Win = new Window("palette", "Create new AE template project")
+        new_project_Win.orientation = "column"
+        new_project_Win.border = [3,3,3,3]
+        var groupOne = new_project_Win.add("group")
+            groupOne.add("statictext", [0,0,70,10], "Renders:")
+            var path_render = groupOne.add("edittext", [0,0,600,18])
         
-    var groupThree = new_project_Win.add("group")
-        var chooseRenderBtn = groupThree.add("button", undefined, "Choose render")
-        var chooseCompBtn = groupThree.add("button", undefined, "Choose composition")
-        var importBtn = groupThree.add("button", undefined, "Create Project!")
+        var groupTwo = new_project_Win.add("group")
+            groupTwo.add("statictext", undefined, "Composition:")
+            var path_comp = groupTwo.add("edittext", [0,0,600,18])
+            
+        var groupThree = new_project_Win.add("group")
+            var chooseRenderBtn = groupThree.add("button", undefined, "Choose render")
+            var chooseCompBtn = groupThree.add("button", undefined, "Choose composition")
+            var importBtn = groupThree.add("button", undefined, "Create Project!")
+        
+        //-------| Event listeners
+        chooseRenderBtn.onClick = function () {
+            var target_render_folder = Folder(start_search_sys_folder).selectDlg("Select folder with render sequences")
+            //alert(targetFolder)K
+            path_render.text = Folder.decode(target_render_folder)
     
-    //-------| Event listeners
-	chooseRenderBtn.onClick = function () {
-		var target_render_folder = Folder(start_search_sys_folder).selectDlg("Select folder with render sequences")
-        //alert(targetFolder)K
-        path_render.text = Folder.decode(target_render_folder)
-
-	}
+        }
+        
+        chooseCompBtn.onClick = function () {
+            var target_comp_folder = File(common_comp_path).openDlg("Select file with composition template", "*.aet")
+            path_comp.text = File.decode(target_comp_folder)
     
-    chooseCompBtn.onClick = function () {
-        var target_comp_folder = File(common_comp_path).openDlg("Select file with composition template", "*.aet")
-        path_comp.text = File.decode(target_comp_folder)
-
-	}
-
-	importBtn.onClick = function () {
-		bru_main(path_render.text, path_comp.text)
-		new_project_Win.close()
-	}
+        }
     
-    new_project_Win.center()
-    new_project_Win.show()
+        importBtn.onClick = function () {
+            bru_main(path_render.text, path_comp.text)
+            new_project_Win.close()
+        }
+        
+        new_project_Win.center()
+        new_project_Win.show()
+    }
    
 
 }
