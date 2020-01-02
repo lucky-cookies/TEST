@@ -258,6 +258,9 @@
         {
             // create render composition
             render_comp = bru_project.items.addComp(ae_raw_folder.item(ii).name.split('.')[0], render_comp_params[0], render_comp_params[1], render_comp_params[2], render_comp_params[3], project_fps)
+            
+            // set start frame. This is known issue (((
+            render_comp.displayStartTime = render_comp.frameDuration + 0.000001
             render_comp.layers.add(ae_raw_folder.item(ii))
             common_comp_layer = render_comp.layers.add(common_comp)
             common_comp_layer.collapseTransformation = true
