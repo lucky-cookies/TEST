@@ -1,4 +1,8 @@
 '''
+TESSSTTS
+
+
+
 This script mast be exequted from command line only
 You mast define two arguments
 1: path to the AE Composition template
